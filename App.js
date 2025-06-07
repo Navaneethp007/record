@@ -40,6 +40,7 @@ const App = () => {
   const [sound, setSound] = useState(null);
   const [playuri, setPlayUri] = useState(null);
   const [progress, setProgress] = useState({});
+  const [isPlay, setIsPlay] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -109,8 +110,14 @@ const App = () => {
   const play = async (uri) => {
     try {
       if (sound && playuri === uri) {
-        await sound.pauseAsync();
-        setPlayUri(null);
+        if(isPlay) {
+          await sound.pauseAsync();
+          setIsPlay(false);
+        }
+        else {
+          await sound.playAsync();
+          setIsPlay(true);
+        }
       } else {
         if (sound) {
           await sound.unloadAsync();
@@ -118,6 +125,7 @@ const App = () => {
         const { sound: newSound } = await Audio.Sound.createAsync({ uri });
         setSound(newSound);
         setPlayUri(uri);
+        setIsPlay(true);
         newSound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded) {
             setProgress((prev) => ({
@@ -129,6 +137,7 @@ const App = () => {
             }));
             if (status.didJustFinish) {
               setPlayUri(null);
+              setIsPlay(false);
               setProgress((prev) => ({ ...prev, [uri]: { position: 0, duration: prev[uri]?.duration || 1 } }));
             }
           }
@@ -158,9 +167,9 @@ const App = () => {
       {audiouri.length > 0 && (
         <View style={styles.audioList}>
           {audiouri.map((uri, index) => (
-          <View key={index} style={styles.audioCard}>
+            <View key={index} style={styles.audioCard}>
+              <View style={styles.cardContent}>
               <Text style={styles.cardText}>Recording {index + 1}</Text>
-            <View style={styles.cardButtons}>
             <TouchableOpacity style={styles.cardButton} onPress={() => play(uri)}>
                   <Icon
                     name={uri === playuri ? 'pause' : 'play-arrow'}
@@ -180,7 +189,7 @@ const App = () => {
                   style={styles.progressBar}
                   onTouchEnd={(e) => {
                     const value = e.nativeEvent.locationX / 260;
-                    seek(uri, value);
+                    seekAudio(uri, value);
                   }}
                 />
               )}
@@ -208,17 +217,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     color: '#000',
-    alignSelf: 'flex-start', 
+    alignSelf: 'flex-start',
     marginTop: 70,
     marginLeft: 10,
     fontWeight: 'bold',
-  },
-  uriText: {
-    fontSize: 14,
-    color: '#333',
-    textAlign: 'center',
-    marginVertical: 20,
-    paddingHorizontal: 10,
   },
   button: {
     borderWidth: 8,
@@ -230,8 +232,8 @@ const styles = StyleSheet.create({
     width: 300,
     height: 80,
     backgroundColor: 'white',
-    alignSelf: 'center', 
-    marginBottom: 30, 
+    alignSelf: 'center',
+    marginBottom: 30,
   },
   waveform: {
     width: 280,
@@ -251,7 +253,6 @@ const styles = StyleSheet.create({
   },
   audioCard: {
     backgroundColor: 'white',
-    flexDirection: 'row',
     borderWidth: 1,
     borderColor: '#d3d3d3',
     borderRadius: 10,
@@ -262,7 +263,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 1,
-    marginTop: 10,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   cardText: {
     fontSize: 16,
@@ -270,15 +275,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 10,
   },
-  cardButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   cardButton: {
     backgroundColor: '#d3d3d3',
     borderRadius: 5,
     padding: 8,
-    marginLeft: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },
