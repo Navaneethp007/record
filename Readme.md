@@ -34,18 +34,7 @@ A simple audio recording app built with React Native and Expo, allowing users to
 - **Play Recording**: Tap the play button on a recording card to listen to it. Use the progress bar to seek through the audio.
 - **Delete Recording**: Tap the delete icon on a recording card to remove it.
 
-## Screenshots
 
-### iOS
-![Recordify on iOS 1](screenshots/ios/I1.jpg)  
-![Recordify on iOS 2](screenshots/ios/I2.jpg)  
-![Recordify on iOS 3](screenshots/ios/I3.jpg)
-![Recordify on iOS 4](screenshots/ios/I4.jpg)
-
-### Android
-![Recordify on Android 1](screenshots/andro/A1.jpg)  
-![Recordify on Android 2](screenshots/andro/A2.jpg)  
-![Recordify on Android 3](screenshots/andro/A3.jpg)
 
 ## Dependencies
 - `expo-av`: For audio recording and playback
@@ -53,6 +42,3 @@ A simple audio recording app built with React Native and Expo, allowing users to
 - `react-native-progress`: For the progress bar
 - `react-native-vector-icons`: For icons
 
-## Notes
-- Ensure you have the Android NDK (e.g., version 26.3.11) properly installed and configured in `android/build.gradle` for Android builds.
-- The app uses a custom dev client due to native module dependencies, so run `npx expo run:android` or `npx expo run:ios` to test locally.
