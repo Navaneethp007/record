@@ -43,9 +43,9 @@ A simple audio recording app built with React Native and Expo, allowing users to
 ![Recordify on iOS 4](screenshots/ios/I4.jpg)
 
 ### Android
-![Recordify on Android 1](screenshots/android/A1.jpg)  
-![Recordify on Android 2](screenshots/android/A2.jpg)  
-![Recordify on Android 3](screenshots/android/A3.jpg)
+![Recordify on Android 1](screenshots/andro/A1.jpg)  
+![Recordify on Android 2](screenshots/andro/A2.jpg)  
+![Recordify on Android 3](screenshots/andro/A3.jpg)
 
 ## Dependencies
 - `expo-av`: For audio recording and playback
