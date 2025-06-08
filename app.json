@@ -1,8 +1,13 @@
 {
   "expo": {
-    "name": "record",
-    "slug": "record",
+    "name": "Recordify",
+    "slug": "recordify",
     "version": "1.0.0",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -19,17 +24,26 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.example.recordify",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["RECORD_AUDIO"]
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-    ]
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "60c0e26f-d987-4ea0-895f-bcc94b43aadf"
+      }
+    },
+    "owner": "nvp007"
   }
 }

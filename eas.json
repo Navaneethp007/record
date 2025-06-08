@@ -1,0 +1,16 @@
+{
+    "build": {
+        "release": {
+            "android": {
+                "buildType": "apk"
+            }
+        },
+        "development": {
+            "android": {
+                "buildType": "apk",
+                "developmentClient": true
+            }
+        }
+    }
+}
+    

@@ -1,37 +1,11 @@
-import React,{ useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import React,{ useState, useEffect} from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { Audio } from 'expo-av';
-import Canvas from 'react-native-canvas';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import * as Progress from'react-native-progress';
-
-const Waveform = ({ isrecording, metering, press, title }) => {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    if (canvasRef.current && Array.isArray(metering)) {
-      const canvas = canvasRef.current;
-      canvas.width = 280;
-      canvas.height = 30;
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#ff0000';
-      metering.forEach((amp, i) => {
-        const barWidth = 3;
-        const gap = 2;
-        const x = i * (barWidth + gap);
-        const barHeight = amp * 30;
-        ctx.fillRect(x, 30 - barHeight, barWidth, barHeight);
-      });
-    }
-  }, [isrecording, metering]);
-  return (
-    <TouchableOpacity style={styles.button} onPress={press}> 
-      <Canvas ref={canvasRef} style={styles.waveform} />
-      <Text style={styles.btitle}>{title}</Text>
-    </TouchableOpacity>
-  );
-};
-
+import * as Progress from 'react-native-progress';
+import Waveform from './Wave'; 
+import { start, stop, play, seek } from './AudioFunc'; 
+ 
 const App = () => { 
   const [rec, setRec] = useState(null);
   const [isrec, setIsRec] = useState(false);
@@ -53,124 +27,24 @@ const App = () => {
         alert('Error requesting permissions:');
       }
     })();
-  }, []);
+    return () => {
+      sound?.unloadAsync();
+    };
+  }, [sound]);
 
-  const start = async () => {
-    try {
-      Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-       
-      });
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync({
-        android: {
-          extension: '.m4a',
-          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
-          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
-        },
-        ios: {
-          extension: '.m4a',
-          outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_MPEG4AAC,
-          audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
-        },
-        isMeteringEnabled: true,
-      });
-      recording.setOnRecordingStatusUpdate((status) => {
-        if (status.metering !== undefined) {
-          setMetering((prev) => {
-            const newValue = Math.max(status.metering + 160, 0) / 160;
-            return [...prev.slice(1), newValue];
-          });
-        }
-      });
-      await recording.startAsync();
-      setRec(recording);
-      setIsRec(true);
-    } catch (error) {
-      alert('Error starting recording:');
-      console.error('Error starting recording:', error);
-    }
-  };
-
-  const stop = async () => {
-    try {
-      await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
-      setAudioUri((prev) => [...prev, uri]);
-      setRec(null);
-      setIsRec(false);
-      setMetering(new Array(50).fill(0));
-    } catch (error) {
-      alert('Error stopping recording:');
-      console.error(error);
-    }  
-  };
-
-  const play = async (uri) => {
-    try {
-      if (sound && playuri === uri) {
-        if(isPlay) {
-          await sound.pauseAsync();
-          setIsPlay(false);
-        }
-        else {
-          await sound.playAsync();
-          setIsPlay(true);
-        }
-      } else {
-        if (sound) {
-          await sound.unloadAsync();
-        }
-        const { sound: newSound } = await Audio.Sound.createAsync({ uri });
-        setSound(newSound);
-        setPlayUri(uri);
-        setIsPlay(true);
-        newSound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded) {
-            setProgress((prev) => ({
-              ...prev,
-              [uri]: {
-                position: status.positionMillis / 1000,
-                duration: status.durationMillis / 1000 || 1,
-              },
-            }));
-            if (status.didJustFinish) {
-              setPlayUri(null);
-              setIsPlay(false);
-              setProgress((prev) => ({ ...prev, [uri]: { position: 0, duration: prev[uri]?.duration || 1 } }));
-            }
-          }
-        });
-        await newSound.playAsync();
-      }
-    } catch (error) {
-      alert('Error playing sound:');
-      console.error(error);
-    }
-  };
-
-  const seek = async (uri, value) => {
-    try {
-      if (sound && playuri === uri) {
-        const duration = progress[uri]?.duration || 1;
-        await sound.setPositionAsync(value * duration * 1000);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Audio Recording App</Text>
-      {audiouri.length > 0 && (
-        <View style={styles.audioList}>
+      <Text style={styles.title}>Recordify</Text>
+      {audiouri.length === 0 ? (
+        <Text style={styles.justText}>No recordings available</Text>
+      ) : (
+        <ScrollView style={styles.audioList} contentContainerStyle={styles.audioListContent}>
           {audiouri.map((uri, index) => (
-            <View key={index} style={styles.audioCard}>
+            <View key={index} style={[styles.audioCard, playuri === uri && styles.activeCard]}>
               <View style={styles.cardContent}>
               <Text style={styles.cardText}>Recording {index + 1}</Text>
-            <TouchableOpacity style={styles.cardButton} onPress={() => play(uri)}>
+            <TouchableOpacity style={styles.cardButton} onPress={() => play(uri, sound, setSound, setPlayUri, setIsPlay, setProgress, isPlay, playuri)}>
                   <Icon
                     name={uri === playuri ? 'pause' : 'play-arrow'}
                     size={20}
@@ -179,30 +53,42 @@ const App = () => {
                 </TouchableOpacity>
               </View>
               {playuri === uri && (
+                <View style={styles.progressContainer}>
                 <Progress.Bar
                   progress={(progress[uri]?.position || 0) / (progress[uri]?.duration || 1)}
                   width={260}
-                  height={8}
-                  color="#ffb6c1"
+                  height={10}
+                  color="#87CEEB"
                   unfilledColor="#d3d3d3"
                   borderWidth={0}
                   style={styles.progressBar}
                   onTouchEnd={(e) => {
                     const value = e.nativeEvent.locationX / 260;
-                    seekAudio(uri, value);
+                    seek(uri, value, sound, playuri, progress);
                   }}
                 />
+                <View
+                    style={[
+                      styles.thumb,
+                      {
+                        left: ((progress[uri]?.position || 0) / (progress[uri]?.duration || 1)) * 260 - 6,
+                      },
+                    ]}
+                  />
+                </View>
               )}
             </View>
           ))}
-        </View>
+        </ScrollView>
       )}
+      <View style={styles.fadeOverlay} /> 
       <Waveform
         isrecording={isrec}
         metering={metering} 
-        press={isrec ? stop : start} 
+        press={isrec ? () => stop(rec, setAudioUri, setRec, setIsRec, setMetering) : () => start(setRec, setIsRec, setMetering)}
         title={isrec ? 'Stop Recording' : 'Start Recording'}
       />
+
     </View>
   );
 };
@@ -215,47 +101,44 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 20,
+    fontSize: 60,
     color: '#000',
     alignSelf: 'flex-start',
     marginTop: 70,
     marginLeft: 10,
     fontWeight: 'bold',
   },
-  button: {
-    borderWidth: 8,
-    borderColor: '#d3d3d3',
-    borderRadius: 25,
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 300,
-    height: 80,
-    backgroundColor: 'white',
-    alignSelf: 'center',
-    marginBottom: 30,
+  
+  fadeOverlay: {
+    position: 'absolute',
+    bottom: 130, 
+    left: 0,
+    right: 0,
+    height: 50,
+    backgroundColor: 'linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,1))',
   },
-  waveform: {
-    width: 280,
-    height: 30,
-    marginBottom: 5,
+  
+  audioListContent: {
+    paddingBottom: 20,
   },
-  btitle: {
+  justText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: 'black',
+    color: '#666',
     textAlign: 'center',
+    marginTop: 20,
   },
   audioList: {
     flex: 1,
     width: '100%',
     paddingHorizontal: 10,
+    marginBottom: 10,
+    marginTop: 10,
   },
   audioCard: {
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#d3d3d3',
-    borderRadius: 10,
+    borderRadius: 15,
     padding: 10,
     marginBottom: 10,
     elevation: 2,
@@ -263,6 +146,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 1,
+    marginTop: 10,
+  },
+  activeCard: {
+    backgroundColor: '#E6F3FA',
   },
   cardContent: {
     flexDirection: 'row',
@@ -274,6 +161,7 @@ const styles = StyleSheet.create({
     color: '#000',
     flex: 1,
     marginRight: 10,
+    fontWeight: 'bold',
   },
   cardButton: {
     backgroundColor: '#d3d3d3',
@@ -282,9 +170,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressBar: {
+  progressContainer: {
+    position: 'relative',
     marginTop: 10,
     alignSelf: 'center',
+  },
+  progressBar: {
+    alignSelf: 'center',
+  },
+  thumb: {
+    position: 'absolute',
+    width: 13,
+    height: 13,
+    borderRadius: 6,
+    backgroundColor: '#4682B4',
+    
   },
 });
 
